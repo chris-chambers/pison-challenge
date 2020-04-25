@@ -8,3 +8,4 @@ aux/*
 
 # Program outputs
 .pison-challenge-port
+.pison-challenge-pid-*

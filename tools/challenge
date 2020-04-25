@@ -1,34 +1,70 @@
 #!/bin/bash
 
+set -euo pipefail
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 : "${CHALLENGE_VERSION:=0.1.0}"
 : "${CHALLENGE_PORTFILE:=.pison-challenge-port}"
+: "${CHALLENGE_AUTO_RESTART:=true}"
 
-if [[ "$1" =~ -h|--help ]]; then
+if [[ "${1:-}" =~ -h|--help ]]; then
   echo >&2 "usage: $0"
   echo >&2 ""
   echo >&2 "Runs the Pison challenge jar, creating a portfile to be read by other programs."
   echo >&2 ""
   echo >&2 "Environment Variables:"
-  echo >&2 "  CHALLENGE_VERSION:  The version of the challenge jar to run.  "
-  echo >&2 "                      Default: 0.1.0"
-  echo >&2 "                      Current: ${CHALLENGE_VERSION}"
-  echo >&2 "  CHALLENGE_PORTFILE: The portfile name to create.  "
-  echo >&2 "                      Default: .pison-challenge-port"
-  echo >&2 "                      Current: ${CHALLENGE_PORTFILE}"
+  echo >&2 "  CHALLENGE_VERSION:      The version of the challenge jar to run.  "
+  echo >&2 "                          Default: 0.1.0"
+  echo >&2 "                          Current: ${CHALLENGE_VERSION}"
+  echo >&2 ""
+  echo >&2 "  CHALLENGE_PORTFILE:     The portfile name to create.  "
+  echo >&2 "                          Default: .pison-challenge-port"
+  echo >&2 "                          Current: ${CHALLENGE_PORTFILE}"
+  echo >&2 ""
+  echo >&2 "  CHALLENGE_AUTO_RESTART: If 'true' automatically restart the server when"
+  echo >&2 "                          a client disconnects to prevent excess CPU usage."
+  echo >&2 "                          Default: true"
+  echo >&2 "                          Current: ${CHALLENGE_AUTO_RESTART}"
   exit 0
 fi
 
 jar="challenge-${CHALLENGE_VERSION}.jar"
 re="ChallengeServer has started on port ([0-9]+)"
+re_lost="Lost connection with client"
+pidfile=".pison-challenge-pid-${RANDOM}"
 
-trap "rm -f ${CHALLENGE_PORTFILE}" EXIT
+should_restart() {
+  [[ "${CHALLENGE_AUTO_RESTART}" == "true" ]]
+}
 
-java -jar "$dir/../aux/challenge-${CHALLENGE_VERSION}.jar" |
-while read -r line; do
-  if [[ "$line" =~ $re ]] ; then
-    echo "${BASH_REMATCH[1]}" > "${CHALLENGE_PORTFILE}"
-  fi
-  echo "$line"
+cleanup() {
+  rm -f "${CHALLENGE_PORTFILE}" "${pidfile}"
+}
+
+trap cleanup EXIT
+
+while true; do
+  ( java -jar "$dir/../aux/${jar}" & echo $! > "$pidfile"; wait ) |
+  {
+    pid=$(cat "$pidfile")
+    trap "kill $pid" EXIT
+
+    while read -r line; do
+      echo "$line"
+
+      if [[ "$line" =~ $re ]] ; then
+        echo "${BASH_REMATCH[1]}" > "${CHALLENGE_PORTFILE}"
+      fi
+
+      if should_restart && [[ "$line" =~ $re_lost ]] ; then
+        echo "--- restart"
+        kill "$pid"
+        cleanup
+      fi
+
+    done
+  }
+
+  should_restart || break
 done
