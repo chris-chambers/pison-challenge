@@ -1,4 +1,10 @@
+# IDE/Build
 .idea/
 .gradle/
 build/
+
+# Auxiliary resources (eg, the challenge jar)
 aux/*
+
+# Program outputs
+.pison-challenge-port
