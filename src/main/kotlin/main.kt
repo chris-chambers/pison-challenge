@@ -62,17 +62,11 @@ fun run(options: Options) {
     val serializer = Sample.serializer()
     scanner.asSequence()
         .map { json.parse(serializer, it) }
-        .let { seq ->
-            if (options.reorderWindowSize > 0) {
-                seq.sortedByInWindow(options.reorderWindowSize, { it.timeStamp }) {
-                    if (options.printLateSamples) {
-                        println("discarded late sample: $it")
-                    }
-                    options.keepLateSamples
-                }
-            } else {
-                seq
+        .sortedByInWindow(options.reorderWindowSize, { it.timeStamp }) {
+            if (options.printLateSamples) {
+                println("discarded late sample: $it")
             }
+            options.keepLateSamples
         }
         .let { seq ->
             if (options.printSamples) {

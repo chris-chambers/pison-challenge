@@ -13,6 +13,12 @@ fun <T, R : Comparable<R>> Sequence<T>.sortedByInWindow(
     selector: (T) -> R,
     late: ((T) -> Boolean)? = null) : Sequence<T>
 {
+    if (windowSize < 0) {
+        throw IllegalArgumentException("windowSize must be non-negative")
+    } else if (windowSize == 0) {
+        return this
+    }
+
     val iter = this.iterator()
     if (!iter.hasNext()) {
         return emptySequence()
