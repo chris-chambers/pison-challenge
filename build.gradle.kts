@@ -19,11 +19,13 @@ tasks.withType<Jar> {
 
 repositories {
     mavenCentral()
+    maven("https://kotlin.bintray.com/kotlinx")
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.2.1")
 }
 
 tasks.withType<KotlinCompile> {
