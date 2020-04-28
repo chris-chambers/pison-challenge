@@ -59,3 +59,19 @@ fun <T, R : Comparable<R>> Sequence<T>.sortedByInWindow(
         yieldAll(buf)
     }
 }
+
+/**
+ * Returns a sequence of results including only the elements on the leading edge
+ * of a change in value.
+ */
+fun <T> Sequence<T>.leadingEdge(): Sequence<T> {
+    return this.windowed(2).filter { it[0] != it[1] }.map { it[1] }
+}
+
+/**
+ * Returns a sequence of results including only the elements on the trailing
+ * edge of a change in value.
+ */
+fun <T> Sequence<T>.trailingEdge(): Sequence<T> {
+    return this.windowed(2).filter { it[0] != it[1] }.map { it[0] }
+}
