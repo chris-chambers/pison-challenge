@@ -21,36 +21,37 @@ fun main(args: Array<String>) {
 
 fun run(options: Options) {
     val classifier = options.classifierFactory(options)
-
-    val socket = Socket(options.host, options.port)
-    val scanner = Scanner(socket.inputStream)
-    val output = socket.outputStream.writer()
     val json = Json(JsonConfiguration.Stable)
     val serializer = Sample.serializer()
 
-    scanner.asSequence()
-        .map { json.parse(serializer, it) }
-        .sortedByInWindow(options.reorderWindowSize, { it.timeStamp }) {
-            if (options.printLateSamples) {
-                println("discarded late sample: $it")
-            }
-            options.keepLateSamples
-        }
-        .let { seq ->
-            if (options.printSamples) {
-                seq.map { println(it); it }
-            } else {
-                seq
-            }
-        }
-        .let(classifier)
-        .forEach { _ ->
-            if (options.printActivations) {
-                println("ACTIVATION")
-            }
+    Socket(options.host, options.port).use { socket ->
+        val scanner = Scanner(socket.inputStream)
+        val output = socket.outputStream.writer()
 
-            output.write("Activation classified\n")
-            output.flush()
-        }
+        scanner.asSequence()
+            .map { json.parse(serializer, it) }
+            .sortedByInWindow(options.reorderWindowSize, { it.timeStamp }) {
+                if (options.printLateSamples) {
+                    println("discarded late sample: $it")
+                }
+                options.keepLateSamples
+            }
+            .let { seq ->
+                if (options.printSamples) {
+                    seq.map { println(it); it }
+                } else {
+                    seq
+                }
+            }
+            .let(classifier)
+            .forEach { _ ->
+                if (options.printActivations) {
+                    println("ACTIVATION")
+                }
+
+                output.write("Activation classified\n")
+                output.flush()
+            }
+    }
 }
 
