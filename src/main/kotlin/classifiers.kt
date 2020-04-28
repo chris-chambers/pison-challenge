@@ -1,6 +1,7 @@
 package com.peanutcode.pison_challenge
 
 import kotlin.math.abs
+import kotlin.math.sign
 
 /**
  * A [Classifier] transforms a sequence of [Sample]s into a sequence of [Unit]s
@@ -116,5 +117,5 @@ fun gamma(
  * oppositeSigns( 0,  0) -> false
  */
 fun oppositeSigns(a: Int, b: Int): Boolean {
-    return (a * b) < 0
+    return (a.sign * b.sign) < 0
 }
